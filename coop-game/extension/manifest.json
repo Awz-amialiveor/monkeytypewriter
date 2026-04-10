@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Infinite Monkey Typewriter",
+  "version": "1.0",
+  "description": "A mini typewriter game for classroom stealth gaming",
+  "permissions": ["activeTab", "storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "monkey.jpg",
+      "48": "monkey.jpg",
+      "128": "monkey.jpg"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "icons": {
+    "16": "monkey.jpg",
+    "48": "monkey.jpg",
+    "128": "monkey.jpg"
+  }
+}

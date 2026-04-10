@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Monkey Typewriter</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f5f0e6;
+            --fg: #2a2520;
+            --muted: #8b7355;
+            --accent: #c9a959;
+            --paper: #faf6ed;
+            --key-bg: #e8e0d0;
+            --key-border: #2a2520;
+            --carriage: #3d3530;
+        }
+
+        [data-theme="dark"] {
+            --bg: #1a1815;
+            --fg: #f0e6d6;
+            --muted: #a08060;
+            --accent: #c9a959;
+            --paper: #252220;
+            --key-bg: #2a2825;
+            --key-border: #f0e6d6;
+            --carriage: #f0e6d6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: auto;
+            min-height: 100vh;
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background: var(--bg);
+            color: var(--fg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            padding-bottom: 100px;
+            transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* Header */
+        .header {
+            width: 100%;
+            max-width: 700px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 0 10px;
+        }
+
+        .title-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            color: var(--fg);
+        }
+
+        .title-monkey {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .control-btn {
+            font-family: 'VT323', monospace;
+            font-size: 16px;
+            padding: 5px 12px;
+            background: var(--bg);
+            color: var(--fg);
+            border: 2px solid var(--fg);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .control-btn:hover {
+            background: var(--fg);
+            color: var(--bg);
+        }
+
+        .control-btn.active {
+            background: var(--fg);
+            color: var(--bg);
+        }
+
+        /* Stats */
+        .stats-bar {
+            width: 100%;
+            max-width: 700px;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            border: 2px solid var(--fg);
+            background: var(--paper);
+            margin-bottom: 12px;
+            border-radius: 4px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .stat-value {
+            font-size: 26px;
+        }
+
+        .global-stats {
+            width: 100%;
+            max-width: 700px;
+            text-align: center;
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
+        /* Typewriter */
+        .typewriter {
+            width: 100%;
+            max-width: 700px;
+            background: var(--key-bg);
+            border: 4px solid var(--fg);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .carriage {
+            background: var(--carriage);
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+        }
+
+        .carriage-handle {
+            width: 35px;
+            height: 16px;
+            background: var(--muted);
+            border-radius: 3px;
+            opacity: 0.6;
+        }
+
+        .carriage-lever {
+            position: absolute;
+            right: 55px;
+            width: 16px;
+            height: 20px;
+            background: var(--muted);
+            border-radius: 2px;
+            opacity: 0.6;
+        }
+
+        .paper-roll {
+            height: 30px;
+            background: repeating-linear-gradient(
+                0deg,
+                var(--fg) 0px,
+                var(--fg) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            opacity: 0.1;
+        }
+
+        .paper-container {
+            background: var(--paper);
+            min-height: 160px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 15px 20px;
+        }
+
+        .typing-area {
+            font-size: 22px;
+            line-height: 1.8;
+        }
+
+        .typing-line {
+            height: 38px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .typing-line.completed { opacity: 0.6; }
+        .typing-line.winner { text-decoration: underline; font-weight: bold; }
+
+        .char-cell {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 36px;
+            position: relative;
+        }
+
+        .char-underline {
+            position: absolute;
+            bottom: 3px;
+            width: 14px;
+            height: 2px;
+            background: var(--muted);
+            opacity: 0.35;
+        }
+
+        .char-target {
+            position: absolute;
+            top: 4px;
+            opacity: 0.45;
+            color: var(--muted);
+            font-size: 22px;
+        }
+
+        .char-typed {
+            position: absolute;
+            top: 4px;
+            z-index: 2;
+            font-size: 22px;
+            color: var(--fg);
+        }
+
+        .char-typed.incorrect {
+            background: rgba(180,60,60,0.25);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        .cursor-underline {
+            position: absolute;
+            bottom: 3px;
+            width: 14px;
+            height: 3px;
+            background: var(--fg);
+            animation: blink 0.5s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Keyboard */
+        .keyboard-container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--key-bg);
+            border: 4px solid var(--fg);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .key {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--key-border);
+            background: var(--paper);
+            color: var(--fg);
+            font-size: 18px;
+            border-radius: 4px;
+            cursor: default;
+            transition: all 0.05s;
+        }
+
+        .key.wide { width: 75px; }
+        .key.extra-wide { width: 150px; }
+
+        .key.pressed {
+            background: var(--fg);
+            color: var(--bg);
+            transform: translateY(2px);
+        }
+
+        .key.disabled { opacity: 0.25; }
+
+        /* ========== START SCREEN ========== */
+        .start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            z-index: 100;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 30px 20px;
+            transition: opacity 0.4s, visibility 0.4s;
+        }
+
+        .start-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .start-content {
+            text-align: center;
+            width: 100%;
+            max-width: 450px;
+            padding: 25px;
+            border: 3px solid var(--fg);
+            background: var(--paper);
+            border-radius: 8px;
+        }
+
+        .start-title-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .start-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .start-title-monkey {
+            width: 26px;
+            height: 26px;
+            border-radius: 4px;
+        }
+
+        .start-inspiration {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 15px;
+            line-height: 1.5;
+            padding: 12px;
+            background: var(--bg);
+            border: 2px solid var(--fg);
+            border-radius: 4px;
+        }
+
+        .start-typewriter {
+            width: 55%;
+            max-width: 220px;
+            margin: 10px auto 15px;
+            border: 2px solid var(--fg);
+            border-radius: 4px;
+        }
+
+        .probability-text {
+            font-size: 13px;
+            color: var(--fg);
+            margin-bottom: 12px;
+            padding: 8px;
+            background: var(--accent);
+            border-radius: 4px;
+            opacity: 0.9;
+        }
+
+        .start-global-stats {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 15px;
+        }
+
+        .start-controls {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .letter-pool {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .letter-item {
+            padding: 6px 10px;
+            border: 2px solid var(--fg);
+            font-size: 18px;
+            background: var(--paper);
+            border-radius: 4px;
+        }
+
+        .letter-item small {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .rules {
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 2px solid var(--fg);
+            background: var(--bg);
+            border-radius: 4px;
+        }
+
+        .start-btn {
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+            padding: 12px 35px;
+            background: var(--fg);
+            color: var(--bg);
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .start-btn:hover { transform: scale(1.03); }
+
+        /* ========== WIN OVERLAY ========== */
+        .win-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .win-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .win-content {
+            text-align: center;
+            padding: 30px;
+            border: 4px solid var(--accent);
+            background: var(--paper);
+            border-radius: 8px;
+            max-width: 400px;
+        }
+
+        .win-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 15px;
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+
+        .win-message {
+            font-size: 15px;
+            margin-bottom: 15px;
+            line-height: 1.6;
+            color: var(--muted);
+        }
+
+        .win-stats {
+            font-size: 15px;
+            margin-bottom: 15px;
+        }
+
+        .restart-btn {
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            padding: 10px 25px;
+            background: var(--fg);
+            color: var(--bg);
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        /* ========== FLOATING BALL ========== */
+        .floating-ball {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            background: var(--paper);
+            border: 2px solid var(--fg);
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .floating-ball:hover { transform: scale(1.1); }
+
+        .floating-ball img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+
+        /* Mini Panel */
+        .mini-panel {
+            display: none;
+            position: fixed;
+            bottom: 75px;
+            right: 20px;
+            width: 240px;
+            background: var(--paper);
+            border: 3px solid var(--fg);
+            padding: 10px;
+            z-index: 999;
+            border-radius: 6px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        }
+
+        .mini-panel.show { display: block; }
+
+        .mini-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .mini-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+        }
+
+        .mini-theme-btn {
+            font-family: 'VT323', monospace;
+            font-size: 11px;
+            padding: 2px 6px;
+            background: var(--paper);
+            color: var(--fg);
+            border: 1px solid var(--fg);
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .mini-theme-btn.active {
+            background: var(--fg);
+            color: var(--paper);
+        }
+
+        .close-mini {
+            font-size: 16px;
+            cursor: pointer;
+            color: var(--muted);
+            margin-left: 8px;
+        }
+
+        .mini-typewriter {
+            border: 2px solid var(--fg);
+            background: var(--bg);
+            padding: 8px;
+            min-height: 45px;
+            font-size: 14px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+
+        .mini-keyboard {
+            border: 2px solid var(--fg);
+            background: var(--key-bg);
+            padding: 6px;
+            border-radius: 4px;
+        }
+
+        .mini-keyboard-row {
+            display: flex;
+            justify-content: center;
+            gap: 3px;
+            margin-bottom: 3px;
+        }
+
+        .mini-key {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--fg);
+            background: var(--paper);
+            color: var(--fg);
+            font-size: 12px;
+            border-radius: 3px;
+            cursor: default;
+        }
+
+        .mini-key.space { width: 65px; }
+
+        .mini-key.pressed {
+            background: var(--fg);
+            color: var(--paper);
+            transform: translateY(1px);
+        }
+
+        .mini-stats {
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            color: var(--muted);
+        }
+
+        /* Mini typing - clear readability */
+        .mini-typing-line {
+            height: 18px;
+            display: flex;
+            align-items: center;
+        }
+
+        .mini-char-cell {
+            width: 12px;
+            height: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .mini-char-target {
+            opacity: 0.55;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .mini-char-typed {
+            position: absolute;
+            font-size: 13px;
+            color: var(--fg);
+        }
+
+        .mini-cursor {
+            width: 8px;
+            height: 2px;
+            background: var(--fg);
+            position: absolute;
+            bottom: 1px;
+            animation: blink 0.5s step-end infinite;
+        }
+
+        /* Responsive */
+        @media (max-width: 500px) {
+            .title { font-size: 10px; }
+            .key { width: 28px; height: 30px; font-size: 14px; }
+            .key.wide { width: 50px; }
+            .key.extra-wide { width: 80px; }
+            .typing-area { font-size: 18px; }
+            .char-cell { width: 16px; height: 30px; }
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <!-- Floating Ball -->
+    <div class="floating-ball" id="floatingBall">
+        <img src="monkey.jpg" alt="">
+    </div>
+
+    <!-- Mini Panel -->
+    <div class="mini-panel" id="miniPanel">
+        <div class="mini-header">
+            <span class="mini-title">MONKEY</span>
+            <div style="display:flex;gap:4px;">
+                <button class="mini-theme-btn active" id="miniLight">L</button>
+                <button class="mini-theme-btn" id="miniDark">D</button>
+            </div>
+            <span class="close-mini" id="closeMini">x</span>
+        </div>
+        <div class="mini-typewriter" id="miniTypewriter"></div>
+        <div class="mini-keyboard" id="miniKeyboard">
+            <div class="mini-keyboard-row">
+                <div class="mini-key" data-key="t">T</div>
+                <div class="mini-key" data-key="o">O</div>
+                <div class="mini-key" data-key="b">B</div>
+                <div class="mini-key" data-key="e">E</div>
+                <div class="mini-key" data-key="n">N</div>
+                <div class="mini-key" data-key="r">R</div>
+            </div>
+            <div class="mini-keyboard-row">
+                <div class="mini-key space" data-key=" ">SPACE</div>
+            </div>
+        </div>
+        <div class="mini-stats">
+            <span>Err: <span id="miniErrors">0</span></span>
+            <span>Lines: <span id="miniLines">0</span></span>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div class="start-overlay" id="startOverlay">
+        <div class="start-content">
+            <div class="start-title-area">
+                <img src="monkey.jpg" alt="" class="start-title-monkey">
+                <h1 class="start-title" data-i18n="title">INFINITE MONKEY<br>TYPEWRITER</h1>
+                <img src="monkey.jpg" alt="" class="start-title-monkey">
+            </div>
+
+            <div class="start-inspiration" data-i18n="inspiration">
+                "If a monkey randomly types on a keyboard for an infinite amount of time, it will almost surely type any given text - including Shakespeare's complete works."
+            </div>
+
+            <img src="typewriter.jpg" alt="Typewriter" class="start-typewriter">
+
+            <div class="probability-text" data-i18n="probability">
+                Your chance of success is 1 in 50,450,400.
+            </div>
+
+            <div class="start-global-stats">
+                <span data-i18n="globalStats">The number of people across the internet who have successfully achieved this so far is:</span>
+                <strong id="globalSuccessCount">0</strong>
+            </div>
+
+            <div class="start-controls">
+                <button class="control-btn active" id="startLangEn">EN</button>
+                <button class="control-btn" id="startLangZh">中文</button>
+            </div>
+
+            <div class="letter-pool">
+                <div class="letter-item">T <small>x3</small></div>
+                <div class="letter-item">O <small>x4</small></div>
+                <div class="letter-item">B <small>x2</small></div>
+                <div class="letter-item">E <small>x2</small></div>
+                <div class="letter-item">N <small>x1</small></div>
+                <div class="letter-item">R <small>x1</small></div>
+            </div>
+
+            <div class="rules">
+                <p data-i18n="rule1">* Letters: 2-2-2-3-2-2 pattern (13 total)</p>
+                <p data-i18n="rule2">* Type the faint letters shown</p>
+                <p data-i18n="rule3">* Complete line = new sequence</p>
+                <p data-i18n="rule4">* Type "to be or not to be" to WIN</p>
+            </div>
+
+            <button class="start-btn" id="startBtn" data-i18n="start">PRESS TO START</button>
+        </div>
+    </div>
+
+    <!-- Win Overlay -->
+    <div class="win-overlay" id="winOverlay">
+        <div class="win-content">
+            <h1 class="win-title">TO BE OR NOT TO BE</h1>
+            <div class="win-message" data-i18n="winMessage">
+                Congratulations on completing the game!<br>
+                We never expected anyone to actually make it...<br>
+                But we don't really have any reward to give you either...<br>
+                The number of people who have achieved the same accomplishment is:
+            </div>
+            <div style="font-size:24px;margin-bottom:15px;color:var(--accent);" id="sameAccomplishment">0</div>
+            <div class="win-stats">
+                <p data-i18n="attempts">Errors: <span id="finalAttempts">0</span></p>
+                <p data-i18n="lines">Lines: <span id="finalLines">0</span></p>
+                <p data-i18n="time">Time: <span id="finalTime">0:00</span></p>
+            </div>
+            <button class="restart-btn" id="restartBtn" data-i18n="playAgain">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <!-- Main Game -->
+    <div class="header">
+        <div class="title-area">
+            <h1 class="title" data-i18n="titleShort">MONKEY TYPEWRITER</h1>
+            <img src="monkey.jpg" alt="" class="title-monkey">
+        </div>
+        <div class="controls">
+            <button class="control-btn active" id="themeLightBtn" data-i18n="light">LIGHT</button>
+            <button class="control-btn" id="themeDarkBtn" data-i18n="dark">DARK</button>
+            <button class="control-btn" id="langBtn">EN</button>
+        </div>
+    </div>
+
+    <div class="global-stats">
+        <span data-i18n="globalStatsGame">Global successes:</span>
+        <strong id="globalSuccessGame">0</strong>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat">
+            <div class="stat-label" data-i18n="errors">ERRORS</div>
+            <div class="stat-value" id="errorCount">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label" data-i18n="linesTyped">LINES</div>
+            <div class="stat-value" id="lineCount">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label" data-i18n="accuracy">ACCURACY</div>
+            <div class="stat-value" id="accuracy">100%</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label" data-i18n="wpm">WPM</div>
+            <div class="stat-value" id="wpm">0</div>
+        </div>
+    </div>
+
+    <!-- Typewriter -->
+    <div class="typewriter">
+        <div class="carriage" id="carriage">
+            <div class="carriage-handle"></div>
+            <div class="carriage-lever"></div>
+            <div class="carriage-handle"></div>
+        </div>
+        <div class="paper-roll"></div>
+        <div class="paper-container" id="paperContainer">
+            <div class="typing-area" id="typingArea"></div>
+        </div>
+    </div>
+
+    <!-- Keyboard -->
+    <div class="keyboard-container" id="keyboard">
+        <div class="keyboard-row">
+            <div class="key" data-key="q">Q</div>
+            <div class="key" data-key="w">W</div>
+            <div class="key" data-key="e">E</div>
+            <div class="key" data-key="r">R</div>
+            <div class="key" data-key="t">T</div>
+            <div class="key" data-key="y">Y</div>
+            <div class="key" data-key="u">U</div>
+            <div class="key" data-key="i">I</div>
+            <div class="key" data-key="o">O</div>
+            <div class="key" data-key="p">P</div>
+        </div>
+        <div class="keyboard-row">
+            <div class="key" data-key="a">A</div>
+            <div class="key" data-key="s">S</div>
+            <div class="key" data-key="d">D</div>
+            <div class="key" data-key="f">F</div>
+            <div class="key" data-key="g">G</div>
+            <div class="key" data-key="h">H</div>
+            <div class="key" data-key="j">J</div>
+            <div class="key" data-key="k">K</div>
+            <div class="key" data-key="l">L</div>
+        </div>
+        <div class="keyboard-row">
+            <div class="key" data-key="z">Z</div>
+            <div class="key" data-key="x">X</div>
+            <div class="key" data-key="c">C</div>
+            <div class="key" data-key="v">V</div>
+            <div class="key" data-key="b">B</div>
+            <div class="key" data-key="n">N</div>
+            <div class="key" data-key="m">M</div>
+        </div>
+        <div class="keyboard-row">
+            <div class="key extra-wide" data-key=" ">SPACE</div>
+        </div>
+    </div>
+
+    <script>
+        const i18n = {
+            en: {
+                title: 'INFINITE MONKEY<br>TYPEWRITER',
+                titleShort: 'MONKEY TYPEWRITER',
+                inspiration: '"If a monkey randomly types on a keyboard for an infinite amount of time, it will almost surely type any given text - including Shakespeare\'s complete works."',
+                probability: 'Your chance of success is 1 in 50,450,400.',
+                globalStats: 'The number of people across the internet who have successfully achieved this so far is:',
+                globalStatsGame: 'Global successes:',
+                rule1: '* Letters: 2-2-2-3-2-2 pattern (13 total)',
+                rule2: '* Type the faint letters shown',
+                rule3: '* Complete line = new sequence',
+                rule4: '* Type "to be or not to be" to WIN',
+                start: 'PRESS TO START',
+                winMessage: 'Congratulations on completing the game!<br>We never expected anyone to actually make it...<br>But we don\'t really have any reward to give you either...<br>The number of people who have achieved the same accomplishment is:',
+                attempts: 'Errors: ',
+                lines: 'Lines: ',
+                time: 'Time: ',
+                playAgain: 'PLAY AGAIN',
+                light: 'LIGHT',
+                dark: 'DARK',
+                errors: 'ERRORS',
+                linesTyped: 'LINES',
+                accuracy: 'ACCURACY',
+                wpm: 'WPM'
+            },
+            zh: {
+                title: '无限猴子<br>打字机',
+                titleShort: '猴子打字机',
+                inspiration: '"如果让一只猴子在键盘上随机敲击无限长时间，它几乎一定能打出任意文本——包括莎士比亚的全部作品。"',
+                probability: '你有 50,450,400 分之一的概率成功。',
+                globalStats: '目前全网成功达成的人数为：',
+                globalStatsGame: '全网成功人数：',
+                rule1: '* 字母：2-2-2-3-2-2 格式（共13个）',
+                rule2: '* 输入显示的浅色字母',
+                rule3: '* 完成一行 = 新序列',
+                rule4: '* 打出 "to be or not to be" 即可获胜',
+                start: '按下开始',
+                winMessage: '恭喜你通关了！<br>我们真没料到有人会通关...<br>不过我们也没什么好奖励你的就是了...<br>刷出一样的成就的还有：',
+                attempts: '错误次数：',
+                lines: '完成行数：',
+                time: '用时：',
+                playAgain: '再来一局',
+                light: '浅色',
+                dark: '深色',
+                errors: '错误',
+                linesTyped: '行数',
+                accuracy: '准确率',
+                wpm: '速度'
+            }
+        };
+
+        let globalSuccessCount = 0;
+
+        const game = {
+            // FIXED: Added 'n' - "to be or not to be" has 'n' in "not"
+            letterPool: { 't': 3, 'o': 4, 'b': 2, 'e': 2, 'n': 1, 'r': 1 },
+            goalPhrase: 'to be or not to be',
+            wordPattern: [2, 2, 2, 3, 2, 2],
+
+            currentTarget: '',
+            currentTyped: '',
+            typedLines: [],
+            currentLineIndex: 0,
+
+            errorCount: 0,
+            lineCount: 0,
+            correctChars: 0,
+            totalChars: 0,
+            startTime: null,
+
+            audioCtx: null,
+            isStarted: false,
+            isWon: false,
+            currentLang: 'en',
+            miniMode: false
+        };
+
+        function initAudio() {
+            if (!game.audioCtx) game.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSound(freq, dur, type = 'square', vol = 0.05) {
+            if (!game.audioCtx) return;
+            try {
+                const osc = game.audioCtx.createOscillator();
+                const gain = game.audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(game.audioCtx.destination);
+                osc.frequency.value = freq;
+                osc.type = type;
+                gain.gain.value = vol;
+                osc.start();
+                osc.stop(game.audioCtx.currentTime + dur);
+            } catch(e) {}
+        }
+
+        function playKeySound(err = false) { playSound(err ? 100 : 400 + Math.random()*80, err ? 0.1 : 0.05); }
+        function playNewLineSound() { playSound(500, 0.12, 'sine', 0.06); }
+        function playWinSound() {
+            [523, 659, 784, 1047].forEach((f,i) => setTimeout(() => playSound(f, 0.2, 'square', 0.07), i*120));
+        }
+
+        // FIXED: Generate with correct 13 letters
+        function generateSequence() {
+            let letters = [];
+            Object.keys(game.letterPool).forEach(l => {
+                for (let i = 0; i < game.letterPool[l]; i++) letters.push(l);
+            });
+            for (let i = letters.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [letters[i], letters[j]] = [letters[j], letters[i]];
+            }
+            let result = [], idx = 0;
+            for (let len of game.wordPattern) {
+                let word = '';
+                for (let i = 0; i < len; i++) word += letters[idx++];
+                result.push(word);
+            }
+            return result.join(' ');
+        }
+
+        function renderLine(line) {
+            if (!line || !line.target) return '<div class="typing-line"></div>';
+            const target = line.target;
+            const typed = line.typed || '';
+            const isCurrent = !line.completed;
+
+            let html = '<div class="typing-line';
+            if (line.completed) html += ' completed';
+            if (line.isWinner) html += ' winner';
+            html += '">';
+
+            for (let i = 0; i < target.length; i++) {
+                const char = target[i];
+                const typedChar = typed[i];
+                const isSpace = char === ' ';
+
+                html += '<span class="char-cell">';
+                if (isSpace) {
+                    // Space - empty
+                } else {
+                    if (!typedChar) html += '<span class="char-underline"></span>';
+                    html += `<span class="char-target">${char}</span>`;
+                }
+                if (typedChar) {
+                    html += `<span class="char-typed${typedChar === char ? '' : ' incorrect'}">${typedChar}</span>`;
+                }
+                if (isCurrent && i === typed.length) {
+                    html += '<span class="cursor-underline"></span>';
+                }
+                html += '</span>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function renderMiniLine() {
+            if (!game.currentTarget) return '';
+            const target = game.currentTarget;
+            const typed = game.currentTyped || '';
+            let html = '<div class="mini-typing-line">';
+            for (let i = 0; i < target.length; i++) {
+                const char = target[i];
+                const typedChar = typed[i];
+                html += '<span class="mini-char-cell">';
+                if (char !== ' ') html += `<span class="mini-char-target">${char}</span>`;
+                if (typedChar) html += `<span class="mini-char-typed">${typedChar}</span>`;
+                if (i === typed.length) html += '<span class="mini-cursor"></span>';
+                html += '</span>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function renderLines() {
+            const container = document.getElementById('typingArea');
+            container.innerHTML = game.typedLines.slice(-5).map(l => renderLine(l)).join('');
+            document.getElementById('paperContainer').scrollTop = 9999;
+        }
+
+        function updateMiniPanel() {
+            if (!game.miniMode) return;
+            document.getElementById('miniTypewriter').innerHTML = renderMiniLine();
+            document.getElementById('miniErrors').textContent = game.errorCount;
+            document.getElementById('miniLines').textContent = game.lineCount;
+        }
+
+        function highlightKey(key) {
+            const k = key.toLowerCase();
+            document.querySelectorAll(`.key[data-key="${k}"], .mini-key[data-key="${k}"]`).forEach(el => {
+                el.classList.add('pressed');
+                setTimeout(() => el.classList.remove('pressed'), 80);
+            });
+        }
+
+        function updateKeyboardState() {
+            const valid = ['t', 'o', 'b', 'e', 'n', 'r', ' '];
+            const expected = game.currentTarget[game.currentTyped.length];
+            document.querySelectorAll('#keyboard .key').forEach(k => {
+                const c = k.dataset.key;
+                k.classList.toggle('disabled', expected === ' ' ? c !== ' ' : !valid.includes(c));
+            });
+        }
+
+        function handleKeyDown(e) {
+            if (!game.isStarted || game.isWon) return;
+            if (e.key === 'Escape') { restartGame(); return; }
+            if (e.key.length !== 1) return;
+
+            const key = e.key.toLowerCase();
+            highlightKey(key);
+            const valid = ['t', 'o', 'b', 'e', 'n', 'r', ' '];
+
+            if (!game.currentTarget || game.currentTyped.length >= game.currentTarget.length) return;
+            const expected = game.currentTarget[game.currentTyped.length];
+
+            if (expected === ' ') {
+                if (key === ' ') { game.currentTyped += ' '; game.correctChars++; game.totalChars++; playKeySound(); }
+                else { game.totalChars++; game.errorCount++; playKeySound(true); updateAll(); return; }
+            } else {
+                if (!valid.includes(key)) { game.totalChars++; game.errorCount++; playKeySound(true); updateAll(); return; }
+                if (key === expected) { game.currentTyped += key; game.correctChars++; game.totalChars++; playKeySound(); }
+                else { game.totalChars++; game.errorCount++; playKeySound(true); updateAll(); return; }
+            }
+
+            if (game.typedLines[game.currentLineIndex]) game.typedLines[game.currentLineIndex].typed = game.currentTyped;
+            if (game.currentTyped.length === game.currentTarget.length) completeLine();
+            updateAll();
+        }
+
+        function completeLine() {
+            const line = game.typedLines[game.currentLineIndex];
+            if (!line) return;
+            line.completed = true;
+            game.lineCount++;
+
+            if (game.currentTyped === game.goalPhrase) {
+                line.isWinner = true;
+                game.isWon = true;
+                globalSuccessCount++;
+                showWin();
+                return;
+            }
+            playNewLineSound();
+            setTimeout(() => newLine(), 200);
+        }
+
+        function updateAll() {
+            renderLines();
+            updateMiniPanel();
+            updateKeyboardState();
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('errorCount').textContent = game.errorCount;
+            document.getElementById('lineCount').textContent = game.lineCount;
+            const acc = game.totalChars > 0 ? Math.round((game.correctChars / game.totalChars) * 100) : 100;
+            document.getElementById('accuracy').textContent = acc + '%';
+            if (game.startTime) {
+                const mins = (Date.now() - game.startTime) / 1000 / 60;
+                document.getElementById('wpm').textContent = mins > 0 ? Math.round((game.correctChars / 5) / mins) : 0;
+            }
+            document.getElementById('globalSuccessCount').textContent = globalSuccessCount;
+            document.getElementById('globalSuccessGame').textContent = globalSuccessCount;
+        }
+
+        function newLine() {
+            game.currentTarget = generateSequence();
+            game.currentTyped = '';
+            game.typedLines.push({ target: game.currentTarget, typed: '', completed: false });
+            game.currentLineIndex = game.typedLines.length - 1;
+            updateAll();
+        }
+
+        function showWin() {
+            playWinSound();
+            const elapsed = game.startTime ? (Date.now() - game.startTime) / 1000 : 0;
+            document.getElementById('finalAttempts').textContent = game.errorCount;
+            document.getElementById('finalLines').textContent = game.lineCount;
+            document.getElementById('finalTime').textContent = `${Math.floor(elapsed/60)}:${Math.floor(elapsed%60).toString().padStart(2,'0')}`;
+            document.getElementById('sameAccomplishment').textContent = globalSuccessCount;
+            document.getElementById('winOverlay').classList.add('show');
+        }
+
+        function startGame() {
+            initAudio();
+            game.isStarted = true;
+            game.startTime = Date.now();
+            document.getElementById('startOverlay').classList.add('hidden');
+            newLine();
+        }
+
+        function restartGame() {
+            game.currentTarget = '';
+            game.currentTyped = '';
+            game.typedLines = [];
+            game.currentLineIndex = -1;
+            game.errorCount = 0;
+            game.lineCount = 0;
+            game.correctChars = 0;
+            game.totalChars = 0;
+            game.startTime = Date.now();
+            game.isWon = false;
+            document.getElementById('winOverlay').classList.remove('show');
+            newLine();
+        }
+
+        function setTheme(t) {
+            document.body.dataset.theme = t;
+            document.getElementById('themeLightBtn').classList.toggle('active', t === 'light');
+            document.getElementById('themeDarkBtn').classList.toggle('active', t === 'dark');
+            document.getElementById('miniLight').classList.toggle('active', t === 'light');
+            document.getElementById('miniDark').classList.toggle('active', t === 'dark');
+        }
+
+        function setLang(l) {
+            game.currentLang = l;
+            document.getElementById('langBtn').textContent = l.toUpperCase();
+            document.getElementById('startLangEn').classList.toggle('active', l === 'en');
+            document.getElementById('startLangZh').classList.toggle('active', l === 'zh');
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.dataset.i18n;
+                if (i18n[l][k]) el.innerHTML = i18n[l][k];
+            });
+            updateStats();
+        }
+
+        function toggleMini() {
+            game.miniMode = !game.miniMode;
+            document.getElementById('miniPanel').classList.toggle('show', game.miniMode);
+            if (game.miniMode && !game.isStarted) { initAudio(); game.isStarted = true; game.startTime = Date.now(); newLine(); }
+            updateMiniPanel();
+        }
+
+        updateStats();
+
+        document.getElementById('startBtn').onclick = startGame;
+        document.getElementById('restartBtn').onclick = restartGame;
+        document.getElementById('themeLightBtn').onclick = () => setTheme('light');
+        document.getElementById('themeDarkBtn').onclick = () => setTheme('dark');
+        document.getElementById('miniLight').onclick = () => setTheme('light');
+        document.getElementById('miniDark').onclick = () => setTheme('dark');
+        document.getElementById('langBtn').onclick = () => setLang(game.currentLang === 'en' ? 'zh' : 'en');
+        document.getElementById('startLangEn').onclick = () => setLang('en');
+        document.getElementById('startLangZh').onclick = () => setLang('zh');
+        document.getElementById('floatingBall').onclick = toggleMini;
+        document.getElementById('closeMini').onclick = toggleMini;
+
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keydown', e => { if (e.key === ' ' && game.isStarted) e.preventDefault(); });
+
+        document.querySelectorAll('.key, .mini-key').forEach(k => {
+            k.onclick = () => {
+                if (!game.isStarted) startGame();
+                if (k.dataset.key) handleKeyDown({ key: k.dataset.key, length: 1 });
+            };
+        });
+    </script>
+</body>
+</html>

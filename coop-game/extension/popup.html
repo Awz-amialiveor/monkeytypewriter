@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'VT323', monospace;
+            width: 260px;
+            background: #f5f0e6;
+            color: #2a2520;
+        }
+        .popup-container {
+            padding: 12px;
+        }
+        .popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding: 10px;
+            border: 2px solid #2a2520;
+            background: #faf6ed;
+            border-radius: 6px;
+        }
+        .popup-header img {
+            width: 24px;
+            height: 24px;
+            border-radius: 3px;
+        }
+        .popup-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: #2a2520;
+        }
+        .toggle-btn {
+            width: 100%;
+            padding: 10px;
+            font-family: 'VT323', monospace;
+            font-size: 16px;
+            background: #2a2520;
+            color: #faf6ed;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+        .toggle-btn:hover {
+            background: #c9a959;
+            color: #2a2520;
+        }
+        .toggle-btn.enabled {
+            background: #c9a959;
+            color: #2a2520;
+        }
+        .popup-info {
+            font-size: 13px;
+            padding: 10px;
+            border: 2px solid #2a2520;
+            background: #faf6ed;
+            border-radius: 4px;
+            line-height: 1.6;
+        }
+        .popup-info p {
+            margin: 4px 0;
+            color: #8b7355;
+        }
+        .popup-info strong {
+            color: #2a2520;
+        }
+        .divider {
+            height: 1px;
+            background: #d4c4a8;
+            margin: 8px 0;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="popup-container">
+        <div class="popup-header">
+            <img src="monkey.jpg" alt="">
+            <div class="popup-title">MONKEY<br>TYPEWRITER</div>
+            <img src="monkey.jpg" alt="">
+        </div>
+        <button class="toggle-btn" id="toggleBtn">ENABLE FLOATING BALL</button>
+        <div class="popup-info">
+            <p><strong>Click</strong> to enable/disable the floating ball.</p>
+            <div class="divider"></div>
+            <p><strong>Click ball</strong> or press <strong>M</strong> to open mini game.</p>
+            <div class="divider"></div>
+            <p><strong>ESC</strong> to restart current line.</p>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
