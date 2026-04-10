@@ -1,0 +1,12 @@
+/* Extension CSS */
+#mk-ball:hover {
+    transform: scale(1.1);
+}
+
+.mk-key:hover {
+    opacity: 0.9;
+}
+
+.mk-btn:hover {
+    opacity: 0.9;
+}
